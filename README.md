@@ -20,3 +20,6 @@
 Kotlin;
 RxJava;
 объектно-ориентированной базы (Realm, например).
+
+![alt tag](https://github.com/Shunajlov/PointsOnTheMap/blob/master/screen1.png)
+![alt tag](https://github.com/Shunajlov/PointsOnTheMap/blob/master/screen2.png)
