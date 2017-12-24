@@ -50,7 +50,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Можно было вынести в отдельный файл
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
-//        mapFragment.setRetainInstance(true); // слишком много маркеров
         mapFragment.getMapAsync(this);
     }
 
