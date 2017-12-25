@@ -62,8 +62,8 @@ public class Point implements ClusterItem {
 
         final Point point = (Point) obj;
 
-        // Сравню по id и имени
-        return this.name.equals(point.name) && this.id == point.id;
+        // Сравню по id
+        return this.id == point.id;
 
     }
 }
