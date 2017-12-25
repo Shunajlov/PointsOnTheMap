@@ -50,4 +50,20 @@ public class Point implements ClusterItem {
     public String getSnippet() {
         return null;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null)
+            return false;
+
+        if (!Point.class.isAssignableFrom(obj.getClass())) {
+            return false;
+        }
+
+        final Point point = (Point) obj;
+
+        // Сравню по id и имени
+        return this.name.equals(point.name) && this.id == point.id;
+
+    }
 }
