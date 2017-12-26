@@ -38,13 +38,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     static boolean loading;
 
-    /**
-     * Нужно чтобы отписаться, когда мы не видим активити
-     */
     Subscription subscription;
 
     /**
-     * Чисто для статистики - сколько всего элементов загружено на данный момент
+     * Just for statistics
      */
     private int totalSize;
 
@@ -52,8 +49,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        // По-простому через <fragment>
-        // Можно было вынести в отдельный файл
+        // Using <fragment> in xml
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -70,11 +66,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         googleMap.setOnCameraIdleListener(clusterManager);
 
         if (!SpHelper.pointSaved()) {
-            // Покажем карту где-нибудь в Москве
+            // show map somewhere in Moscow
             LatLng moscow = new LatLng(55.746390, 37.624239);
             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(moscow, 10));
         } else {
-            // покажем последнюю сохранённую позицию карты
+            // show last saved map camera position
             CameraPosition pos = SpHelper.getMapPos();
             googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(pos));
         }
@@ -91,16 +87,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (googleMap != null) {
             SpHelper.saveMapPos(googleMap.getCameraPosition());
         }
-        subscription.unsubscribe();
+        App.activityPaused();
+        subscription.unsubscribe(); // stop loading
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        App.activityPaused();
+        subscription.unsubscribe(); // stop loading
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        App.activityResumed();
+        loadMarkers(); // resume loading
     }
 
     /**
-     * Загрузка маркеров из локальной БД
+     * Load markers via local db
      */
     private void loadOfflineMarkers() {
         db = MyDb.getDb(this.getApplicationContext());
@@ -113,7 +119,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
-     * Загрузка маркеров через апи
+     * Load markers via rest api
      */
     private void loadMarkers() {
         Observable<PointsResult> result = ApiConnection.getInstance()
@@ -147,18 +153,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             lastPointId = points.get(i).id;
                         }
                         clusterManager.addItems(points);
-                        db.getDao().insertAll(points); // запишем в базу
+                        db.getDao().insertAll(points); // insert data into db
 
                         totalSize += points.size();
 
                         if (points.size() > 0)
-                            toast("Добавлено элементов: " + points.size()
-                                    + ". Всего: " + totalSize);
+                            toast("Added elements: " + points.size()
+                                    + ". Total: " + totalSize);
 
                         if (pointsResult.hasMorePages)
                             loadMarkers();
                         else if (!toastShown) {
-                            toast("Все элементы уже загружены (" + totalSize + ")");
+                            toast("All elements loaded (" + totalSize + ")");
                             toastShown = true;
                         }
                     }
@@ -166,6 +172,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void toast(String msg) {
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        if (App.isActivityVisible()) // don't show toast while activity is not foreground
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 }

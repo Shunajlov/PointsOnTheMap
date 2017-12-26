@@ -10,8 +10,8 @@ public interface Api {
 
     /**
      *
-     * @param startFrom int ID между 1 и 2147483647
-     * @return <p>объект, содержащий список точек, состоящий из
+     * @param startFrom int ID between 1 and 2147483647
+     * @return <p> An object that contains a list of
      * {@link com.ihavenodomain.pointsonthemap.model.points.Point}</p>
      */
     @GET("places")
