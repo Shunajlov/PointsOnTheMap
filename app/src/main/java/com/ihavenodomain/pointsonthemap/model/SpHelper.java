@@ -22,7 +22,7 @@ public class SpHelper {
         App.EDITOR.putLong(LNG, Double.doubleToRawLongBits(lng)).apply();
         App.EDITOR.putFloat(ZOOM, zoom).apply();
 
-        App.EDITOR.putBoolean(POINT_SAVED, true);
+        App.EDITOR.putBoolean(POINT_SAVED, true).apply();
     }
 
     public static boolean pointSaved() {

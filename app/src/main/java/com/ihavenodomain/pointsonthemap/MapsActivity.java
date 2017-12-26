@@ -21,6 +21,7 @@ import java.util.ArrayList;
 
 import rx.Observable;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
@@ -36,6 +37,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static boolean toastShown;
 
     static boolean loading;
+
+    /**
+     * Нужно чтобы отписаться, когда мы не видим активити
+     */
+    Subscription subscription;
 
     /**
      * Чисто для статистики - сколько всего элементов загружено на данный момент
@@ -66,8 +72,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (!SpHelper.pointSaved()) {
             // Покажем карту где-нибудь в Москве
             LatLng moscow = new LatLng(55.746390, 37.624239);
-            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(moscow, 5));
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(moscow, 10));
         } else {
+            // покажем последнюю сохранённую позицию карты
             CameraPosition pos = SpHelper.getMapPos();
             googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(pos));
         }
@@ -84,6 +91,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (googleMap != null) {
             SpHelper.saveMapPos(googleMap.getCameraPosition());
         }
+        subscription.unsubscribe();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     /**
@@ -93,9 +106,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         db = MyDb.getDb(this.getApplicationContext());
         ArrayList<Point> savedPoints = new ArrayList<>(db.getDao().getAllSavedPoints());
         if (!savedPoints.isEmpty()) {
-            for (int i = 0; i < savedPoints.size(); i++) {
-                clusterManager.addItem(savedPoints.get(i));
-            }
+            clusterManager.addItems(savedPoints);
             lastPointId = savedPoints.get(savedPoints.size() - 1).id;
         }
         totalSize = savedPoints.size();
@@ -107,11 +118,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void loadMarkers() {
         Observable<PointsResult> result = ApiConnection.getInstance()
                 .getApi().getPoints(lastPointId);
-        result.subscribeOn(Schedulers.newThread())
+
+        subscription = result.subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<PointsResult>() {
                     @Override
-                    public void onCompleted() { loading = false; }
+                    public void onCompleted() {
+                        loading = false;
+                    }
 
                     @Override
                     public void onError(Throwable e) {
@@ -127,13 +141,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             double lat = pos.latitude + offset;
                             double lng = pos.longitude + offset;
 
-                            Point offsetPoint = points.get(i);
-                            offsetPoint.lat = lat;
-                            offsetPoint.lng = lng;
-                            clusterManager.addItem(offsetPoint);
+                            points.get(i).lat = lat;
+                            points.get(i).lng = lng;
 
                             lastPointId = points.get(i).id;
                         }
+                        clusterManager.addItems(points);
                         db.getDao().insertAll(points); // запишем в базу
 
                         totalSize += points.size();
